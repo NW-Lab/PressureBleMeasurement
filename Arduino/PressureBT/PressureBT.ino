@@ -1,3 +1,4 @@
+#include <M5GFX.h>
 #include <M5Unified.h>
 #include <BleSerial.h>
 #include "BleBufferedSerial.h"
@@ -19,16 +20,16 @@ void setup() {
   M5.begin();
 
   M5.Power.setExtOutput(true);  // EXT_5V OUTPUT
-  M5.Speaker.setVolume(0);
+  M5.Speaker.end();
   M5.Display.setRotation(1);
-  int textsize = M5.Display.height() / 60;
-  if (textsize == 0) {
-    textsize = 1;
-  }
-  M5.Display.setTextSize(textsize);
+  //int textsize = M5.Display.height() / 60;
+  //if (textsize == 0) {
+  //  textsize = 1;
+  // }
+  //M5.Display.setTextSize(textsize);
   M5.Display.clear(TFT_BLACK);
   M5.Display.print("PressureBT");
-  canvas.createSprite(M5.Display.width(), M5.Display.height());
+  canvas.createSprite(240, 135);
   SerialBT1.begin("PressureBT");
 
   // Try to initialize the sensor
@@ -111,8 +112,6 @@ int n = 0;
 void loop() {
   canvas.clear(TFT_BLACK);
   canvas.setColor(TFT_WHITE);
-  if (n < 240) n++;
-
   // Check if new data is ready before reading
   if (!bmp.dataReady()) {
     return;
@@ -139,25 +138,27 @@ void loop() {
   //Serial.println(F("---"));
   float max_pressure = 0;
   float min_pressure = 9999;
-  if (n == 240)
-    for (int i = 1; i < n; i++) {
+  if (n == 239) {
+    for (int i = 0; i < 239; i++) {
       buffer_pressure[i] = buffer_pressure[i + 1];
     }
-  buffer_pressure[n] = pressure;
-
-  for (int i = 0; i < n; i++) {
+  }
+    buffer_pressure[n] = pressure;
+ 
+  for (int i = 0; i <= n ; i++) {
     if (max_pressure < buffer_pressure[i]) max_pressure = buffer_pressure[i];
     if (min_pressure > buffer_pressure[i]) min_pressure = buffer_pressure[i];
   }
 
-  float H = (max_pressure - min_pressure) / 135.0;
+  float H = (max_pressure - min_pressure) / 133.0;
 
-  for (int i = 0; i < n; i++) {
+  for (int i = 0; i <= n ; i++) {
     //M5.Display.drawPixel(i,(buffer_pressure[i]-min_pressure)/H,TFT_WHITE);
     canvas.drawPixel(i, (buffer_pressure[i] - min_pressure) / H);
   }
   SerialBT1.printf("%f\r\n", pressure);
   SerialBT1.flush();
-  canvas.pushSprite(&M5.Lcd, 0, 0);
-  delay(1);  // Short delay since we're checking dataReady()
+  canvas.pushSprite(0, 0);
+  if (n < 239) n++;
+  delay(1); 
 }
