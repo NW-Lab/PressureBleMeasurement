@@ -1,4 +1,4 @@
-#include<M5Unified.h>
+#include <M5Unified.h>
 #include <BleSerial.h>
 #include "BleBufferedSerial.h"
 #include <Wire.h>
@@ -10,44 +10,35 @@
 
 BleBufferedSerial SerialBT1;
 
-Adafruit_BMP5xx bmp; // Create BMP5xx object
-bmp5xx_powermode_t desiredMode = BMP5XX_POWERMODE_NORMAL; // Cache desired power mode
+Adafruit_BMP5xx bmp;                                       // Create BMP5xx object
+bmp5xx_powermode_t desiredMode = BMP5XX_POWERMODE_NORMAL;  // Cache desired power mode
+
+M5Canvas canvas(&M5.Lcd);
 
 void setup() {
   M5.begin();
-	
-  M5.Power.setExtOutput(true); // EXT_5V OUTPUT
 
+  M5.Power.setExtOutput(true);  // EXT_5V OUTPUT
+  M5.Speaker.setVolume(0);
   M5.Display.setRotation(1);
   int textsize = M5.Display.height() / 60;
-    if (textsize == 0) {
-        textsize = 1;
-    }
+  if (textsize == 0) {
+    textsize = 1;
+  }
   M5.Display.setTextSize(textsize);
   M5.Display.clear(TFT_BLACK);
   M5.Display.print("PressureBT");
-
-  Serial.begin(115200);
+  canvas.createSprite(M5.Display.width(), M5.Display.height());
   SerialBT1.begin("PressureBT");
-  while (!Serial) delay(10);  // Wait for Serial Monitor to open
-  
-  Serial.println(F("Adafruit BMP5xx Comprehensive Test!"));
 
   // Try to initialize the sensor
   // For I2C mode (default):
   if (!bmp.begin(BMP5XX_ALTERNATIVE_ADDRESS, &Wire)) {
-  // For SPI mode (uncomment the line below and comment out the I2C line above):
-  // if (!bmp.begin(BMP5XX_CS_PIN, &SPI)) {
-    Serial.println(F("Could not find a valid BMP5xx sensor, check wiring!"));
     while (1) delay(10);
   }
 
-  Serial.println(F("BMP5xx found!"));
-  Serial.println();
-
   // Demonstrate all setter functions with range documentation
-  Serial.println(F("=== Setting Up Sensor Configuration ==="));
-  
+
   /* Temperature Oversampling Settings:
    * BMP5XX_OVERSAMPLING_1X   - 1x oversampling (fastest, least accurate)
    * BMP5XX_OVERSAMPLING_2X   - 2x oversampling  
@@ -58,14 +49,12 @@ void setup() {
    * BMP5XX_OVERSAMPLING_64X  - 64x oversampling
    * BMP5XX_OVERSAMPLING_128X - 128x oversampling (slowest, most accurate)
    */
-  Serial.println(F("Setting temperature oversampling to 2X..."));
   bmp.setTemperatureOversampling(BMP5XX_OVERSAMPLING_2X);
 
   /* Pressure Oversampling Settings (same options as temperature):
    * Higher oversampling = better accuracy but slower readings
    * Recommended: 16X for good balance of speed/accuracy
    */
-  Serial.println(F("Setting pressure oversampling to 16X..."));
   bmp.setPressureOversampling(BMP5XX_OVERSAMPLING_16X);
 
   /* IIR Filter Coefficient Settings:
@@ -78,7 +67,6 @@ void setup() {
    * BMP5XX_IIR_FILTER_COEFF_63 - Maximum filtering
    * BMP5XX_IIR_FILTER_COEFF_127- Maximum filtering (slowest response)
    */
-  Serial.println(F("Setting IIR filter to coefficient 3..."));
   bmp.setIIRFilterCoeff(BMP5XX_IIR_FILTER_COEFF_3);
 
   /* Output Data Rate Settings (Hz):
@@ -92,7 +80,6 @@ void setup() {
    * BMP5XX_ODR_05_HZ, BMP5XX_ODR_04_HZ, BMP5XX_ODR_03_HZ, BMP5XX_ODR_02_HZ
    * BMP5XX_ODR_01_HZ, BMP5XX_ODR_0_5_HZ, BMP5XX_ODR_0_250_HZ, BMP5XX_ODR_0_125_HZ
    */
-  Serial.println(F("Setting output data rate to 50 Hz..."));
   bmp.setOutputDataRate(BMP5XX_ODR_50_HZ);
 
   /* Power Mode Settings:
@@ -102,7 +89,6 @@ void setup() {
    * BMP5XX_POWERMODE_CONTINUOUS  - Continuous mode (fastest measurements)
    * BMP5XX_POWERMODE_DEEP_STANDBY - Deep standby (lowest power)
    */
-  Serial.println(F("Setting power mode to normal..."));
   desiredMode = BMP5XX_POWERMODE_NORMAL;
   bmp.setPowerMode(desiredMode);
 
@@ -110,7 +96,6 @@ void setup() {
    * true  - Enable pressure measurement (default)
    * false - Disable pressure measurement (temperature only)
    */
-  Serial.println(F("Enabling pressure measurement..."));
   bmp.enablePressure(true);
 
   /* Interrupt Configuration:
@@ -119,109 +104,15 @@ void setup() {
    * BMP5XX_INTERRUPT_PUSH_PULL / BMP5XX_INTERRUPT_OPEN_DRAIN - Interrupt drive
    * BMP5XX_INTERRUPT_DATA_READY, BMP5XX_INTERRUPT_FIFO_FULL, etc. - Interrupt sources (can combine with |)
    */
-  Serial.println(F("Configuring interrupt pin with data ready source..."));
   bmp.configureInterrupt(BMP5XX_INTERRUPT_LATCHED, BMP5XX_INTERRUPT_ACTIVE_HIGH, BMP5XX_INTERRUPT_PUSH_PULL, BMP5XX_INTERRUPT_DATA_READY, true);
-
-  Serial.println();
-  Serial.println(F("=== Current Sensor Configuration ==="));
-  
-  // Pretty print temperature oversampling inline
-  Serial.print(F("Temperature Oversampling: "));
-  switch(bmp.getTemperatureOversampling()) {
-    case BMP5XX_OVERSAMPLING_1X:   Serial.println(F("1X")); break;
-    case BMP5XX_OVERSAMPLING_2X:   Serial.println(F("2X")); break;
-    case BMP5XX_OVERSAMPLING_4X:   Serial.println(F("4X")); break;
-    case BMP5XX_OVERSAMPLING_8X:   Serial.println(F("8X")); break;
-    case BMP5XX_OVERSAMPLING_16X:  Serial.println(F("16X")); break;
-    case BMP5XX_OVERSAMPLING_32X:  Serial.println(F("32X")); break;
-    case BMP5XX_OVERSAMPLING_64X:  Serial.println(F("64X")); break;
-    case BMP5XX_OVERSAMPLING_128X: Serial.println(F("128X")); break;
-    default: Serial.println(F("Unknown")); break;
-  }
-  
-  // Pretty print pressure oversampling inline
-  Serial.print(F("Pressure Oversampling: "));
-  switch(bmp.getPressureOversampling()) {
-    case BMP5XX_OVERSAMPLING_1X:   Serial.println(F("1X")); break;
-    case BMP5XX_OVERSAMPLING_2X:   Serial.println(F("2X")); break;
-    case BMP5XX_OVERSAMPLING_4X:   Serial.println(F("4X")); break;
-    case BMP5XX_OVERSAMPLING_8X:   Serial.println(F("8X")); break;
-    case BMP5XX_OVERSAMPLING_16X:  Serial.println(F("16X")); break;
-    case BMP5XX_OVERSAMPLING_32X:  Serial.println(F("32X")); break;
-    case BMP5XX_OVERSAMPLING_64X:  Serial.println(F("64X")); break;
-    case BMP5XX_OVERSAMPLING_128X: Serial.println(F("128X")); break;
-    default: Serial.println(F("Unknown")); break;
-  }
-  
-  // Pretty print IIR filter coefficient inline
-  Serial.print(F("IIR Filter Coefficient: "));
-  switch(bmp.getIIRFilterCoeff()) {
-    case BMP5XX_IIR_FILTER_BYPASS:   Serial.println(F("Bypass (No filtering)")); break;
-    case BMP5XX_IIR_FILTER_COEFF_1:  Serial.println(F("1 (Light filtering)")); break;
-    case BMP5XX_IIR_FILTER_COEFF_3:  Serial.println(F("3 (Medium filtering)")); break;
-    case BMP5XX_IIR_FILTER_COEFF_7:  Serial.println(F("7 (More filtering)")); break;
-    case BMP5XX_IIR_FILTER_COEFF_15: Serial.println(F("15 (Heavy filtering)")); break;
-    case BMP5XX_IIR_FILTER_COEFF_31: Serial.println(F("31 (Very heavy filtering)")); break;
-    case BMP5XX_IIR_FILTER_COEFF_63: Serial.println(F("63 (Maximum filtering)")); break;
-    case BMP5XX_IIR_FILTER_COEFF_127:Serial.println(F("127 (Maximum filtering)")); break;
-    default: Serial.println(F("Unknown")); break;
-  }
-  
-  // Pretty print output data rate inline
-  Serial.print(F("Output Data Rate: "));
-  switch(bmp.getOutputDataRate()) {
-    case BMP5XX_ODR_240_HZ:   Serial.println(F("240 Hz")); break;
-    case BMP5XX_ODR_218_5_HZ: Serial.println(F("218.5 Hz")); break;
-    case BMP5XX_ODR_199_1_HZ: Serial.println(F("199.1 Hz")); break;
-    case BMP5XX_ODR_179_2_HZ: Serial.println(F("179.2 Hz")); break;
-    case BMP5XX_ODR_160_HZ:   Serial.println(F("160 Hz")); break;
-    case BMP5XX_ODR_149_3_HZ: Serial.println(F("149.3 Hz")); break;
-    case BMP5XX_ODR_140_HZ:   Serial.println(F("140 Hz")); break;
-    case BMP5XX_ODR_129_8_HZ: Serial.println(F("129.8 Hz")); break;
-    case BMP5XX_ODR_120_HZ:   Serial.println(F("120 Hz")); break;
-    case BMP5XX_ODR_110_1_HZ: Serial.println(F("110.1 Hz")); break;
-    case BMP5XX_ODR_100_2_HZ: Serial.println(F("100.2 Hz")); break;
-    case BMP5XX_ODR_89_6_HZ:  Serial.println(F("89.6 Hz")); break;
-    case BMP5XX_ODR_80_HZ:    Serial.println(F("80 Hz")); break;
-    case BMP5XX_ODR_70_HZ:    Serial.println(F("70 Hz")); break;
-    case BMP5XX_ODR_60_HZ:    Serial.println(F("60 Hz")); break;
-    case BMP5XX_ODR_50_HZ:    Serial.println(F("50 Hz")); break;
-    case BMP5XX_ODR_45_HZ:    Serial.println(F("45 Hz")); break;
-    case BMP5XX_ODR_40_HZ:    Serial.println(F("40 Hz")); break;
-    case BMP5XX_ODR_35_HZ:    Serial.println(F("35 Hz")); break;
-    case BMP5XX_ODR_30_HZ:    Serial.println(F("30 Hz")); break;
-    case BMP5XX_ODR_25_HZ:    Serial.println(F("25 Hz")); break;
-    case BMP5XX_ODR_20_HZ:    Serial.println(F("20 Hz")); break;
-    case BMP5XX_ODR_15_HZ:    Serial.println(F("15 Hz")); break;
-    case BMP5XX_ODR_10_HZ:    Serial.println(F("10 Hz")); break;
-    case BMP5XX_ODR_05_HZ:    Serial.println(F("5 Hz")); break;
-    case BMP5XX_ODR_04_HZ:    Serial.println(F("4 Hz")); break;
-    case BMP5XX_ODR_03_HZ:    Serial.println(F("3 Hz")); break;
-    case BMP5XX_ODR_02_HZ:    Serial.println(F("2 Hz")); break;
-    case BMP5XX_ODR_01_HZ:    Serial.println(F("1 Hz")); break;
-    case BMP5XX_ODR_0_5_HZ:   Serial.println(F("0.5 Hz")); break;
-    case BMP5XX_ODR_0_250_HZ: Serial.println(F("0.25 Hz")); break;
-    case BMP5XX_ODR_0_125_HZ: Serial.println(F("0.125 Hz")); break;
-    default: Serial.println(F("Unknown")); break;
-  }
-  
-  // Pretty print power mode inline
-  Serial.print(F("Power Mode: "));
-  switch(bmp.getPowerMode()) {
-    case BMP5XX_POWERMODE_STANDBY:     Serial.println(F("Standby")); break;
-    case BMP5XX_POWERMODE_NORMAL:      Serial.println(F("Normal")); break;
-    case BMP5XX_POWERMODE_FORCED:      Serial.println(F("Forced")); break;
-    case BMP5XX_POWERMODE_CONTINUOUS:  Serial.println(F("Continuous")); break;
-    case BMP5XX_POWERMODE_DEEP_STANDBY:Serial.println(F("Deep Standby")); break;
-    default: Serial.println(F("Unknown")); break;
-  }
-  
-  Serial.println();
 }
 float buffer_pressure[240];
-int n=0;
+int n = 0;
 void loop() {
-  if(n<240) n++;  //average用
+  canvas.clear(TFT_BLACK);
+  canvas.setColor(TFT_WHITE);
+  if (n < 240) n++;
+
   // Check if new data is ready before reading
   if (!bmp.dataReady()) {
     return;
@@ -231,7 +122,7 @@ void loop() {
   if (!bmp.performReading()) {
     return;
   }
-  
+
   //Serial.print(F("Temperature = "));
   //Serial.print(bmp.temperature);
   //Serial.println(F(" °C"));
@@ -246,19 +137,27 @@ void loop() {
   //Serial.println(F(" m"));
 
   //Serial.println(F("---"));
-  float max_pressure=0;
-  float min_pressure=9999;
-  buffer_pressure[n]=pressure;
-  for(int i=0;i<n;i++){
-    buffer_pressure[i]=buffer_pressure[i+1];
-    if(max_pressure<buffer_pressure[i])max_pressure=buffer_pressure[i];
-    if(min_pressure>buffer_pressure[i])min_pressure=buffer_pressure[i];
+  float max_pressure = 0;
+  float min_pressure = 9999;
+  if (n == 240)
+    for (int i = 1; i < n; i++) {
+      buffer_pressure[i] = buffer_pressure[i + 1];
+    }
+  buffer_pressure[n] = pressure;
+
+  for (int i = 0; i < n; i++) {
+    if (max_pressure < buffer_pressure[i]) max_pressure = buffer_pressure[i];
+    if (min_pressure > buffer_pressure[i]) min_pressure = buffer_pressure[i];
   }
-  int H=(max_pressure-min_pressure)/135;
-  for(int i=0;i<n;i++){
-    M5.Display.drawPixel(i,(buffer_pressure[i]-min_pressure)/H,TFT_WHITE);
+
+  float H = (max_pressure - min_pressure) / 135.0;
+
+  for (int i = 0; i < n; i++) {
+    //M5.Display.drawPixel(i,(buffer_pressure[i]-min_pressure)/H,TFT_WHITE);
+    canvas.drawPixel(i, (buffer_pressure[i] - min_pressure) / H);
   }
-  SerialBT1.printf("%f\r\n",pressure);
+  SerialBT1.printf("%f\r\n", pressure);
   SerialBT1.flush();
-  delay(1); // Short delay since we're checking dataReady()
+  canvas.pushSprite(&M5.Lcd, 0, 0);
+  delay(1);  // Short delay since we're checking dataReady()
 }
