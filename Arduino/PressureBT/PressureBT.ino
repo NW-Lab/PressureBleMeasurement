@@ -22,6 +22,7 @@ void setup() {
   M5.Power.setExtOutput(true);  // EXT_5V OUTPUT
   M5.Speaker.end();
   M5.Display.setRotation(1);
+  M5.Display.setColorDepth(1);
   //int textsize = M5.Display.height() / 60;
   //if (textsize == 0) {
   //  textsize = 1;
@@ -29,6 +30,7 @@ void setup() {
   //M5.Display.setTextSize(textsize);
   M5.Display.clear(TFT_BLACK);
   M5.Display.print("PressureBT");
+  canvas.setColorDepth(1);
   canvas.createSprite(240, 135);
   SerialBT1.begin("PressureBT");
 
@@ -107,11 +109,10 @@ void setup() {
    */
   bmp.configureInterrupt(BMP5XX_INTERRUPT_LATCHED, BMP5XX_INTERRUPT_ACTIVE_HIGH, BMP5XX_INTERRUPT_PUSH_PULL, BMP5XX_INTERRUPT_DATA_READY, true);
 }
-float buffer_pressure[240];
+float buffer_pressure[241];
 int n = 0;
 void loop() {
-  canvas.clear(TFT_BLACK);
-  canvas.setColor(TFT_WHITE);
+  
   // Check if new data is ready before reading
   if (!bmp.dataReady()) {
     return;
@@ -138,27 +139,29 @@ void loop() {
   //Serial.println(F("---"));
   float max_pressure = 0;
   float min_pressure = 9999;
-  if (n == 239) {
-    for (int i = 0; i < 239; i++) {
+  buffer_pressure[n] = pressure;
+  if (n == 240) {
+    for (int i = 0; i < 240; i++) {
       buffer_pressure[i] = buffer_pressure[i + 1];
     }
   }
-    buffer_pressure[n] = pressure;
- 
-  for (int i = 0; i <= n ; i++) {
+
+  for (int i = 0; i < n; i++) {
     if (max_pressure < buffer_pressure[i]) max_pressure = buffer_pressure[i];
     if (min_pressure > buffer_pressure[i]) min_pressure = buffer_pressure[i];
   }
 
   float H = (max_pressure - min_pressure) / 133.0;
 
-  for (int i = 0; i <= n ; i++) {
-    //M5.Display.drawPixel(i,(buffer_pressure[i]-min_pressure)/H,TFT_WHITE);
-    canvas.drawPixel(i, (buffer_pressure[i] - min_pressure) / H);
+  canvas.clear(TFT_BLACK);
+  canvas.setColor(TFT_WHITE);
+
+  for (int i = 0; i < n; i++) {
+    canvas.drawPixel(i, 134-(buffer_pressure[i] - min_pressure) / H);
   }
   SerialBT1.printf("%f\r\n", pressure);
   SerialBT1.flush();
   canvas.pushSprite(0, 0);
-  if (n < 239) n++;
-  delay(1); 
+  if (n < 240) n++;
+  delay(1);
 }
